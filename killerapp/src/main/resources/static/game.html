@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Killers – Game</title>
+
+    <style>
+:root {
+    --bg: #1a4d2e;         /* lighter green pool felt */
+    --card: #2e6b44;       /* slightly lighter card */
+    --accent: #ffd700;     /* gold accent */
+    --danger: #d62828;     /* red for lose life */
+    --text: #f0f0f0;       /* bright text */
+    --subtext: #dcdcdc;    /* lighter muted text */
+    --highlight: #39ff14;  /* neon green for current */
+    --winner: #fffa65;     /* neon yellow for winner */
+}
+
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',sans-serif; background: var(--bg); color: var(--text); }
+
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+
+.card {
+    background: var(--card);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    margin-bottom: 24px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.6); }
+
+h1 { text-align:center; font-size:2.2rem; font-weight:800; color: var(--accent); margin-bottom: 20px; letter-spacing: 1px; text-shadow: 0 0 4px rgba(0,0,0,0.5); }
+
+.big { font-size: 2rem; font-weight: 700; margin: 12px 0; text-align:center; color: var(--text); text-shadow: 0 0 2px rgba(0,0,0,0.5);}
+.small { font-size: 1rem; color: var(--subtext); text-align:center; margin-bottom:12px; }
+
+button {
+    width: 100%;
+    padding: 16px;
+    font-size: 1rem;
+    border:none;
+    border-radius: 12px;
+    cursor:pointer;
+    font-weight:700;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    margin-top:12px;
+}
+button.primary { background: linear-gradient(45deg, #2cae2c, #1e7d1e); color: #fff; }
+button.primary:hover { background: linear-gradient(45deg, #3ddf3d, #2cae2c); transform: scale(1.03); }
+button.danger { background: linear-gradient(45deg, #d62828, #a4161a); color:#fff; }
+button.danger:hover { background: linear-gradient(45deg, #ff3333, #d62828); transform: scale(1.03); }
+
+.players { list-style:none; padding:0; margin-top:16px; }
+.players li {
+    display:flex;
+    justify-content:space-between;
+    padding:14px 16px;
+    margin-bottom:8px;
+    border-radius:10px;
+    background: rgba(255,255,255,0.08);
+    transition: all 0.3s ease;
+    font-weight:500;
+    color: var(--text);
+}
+.players li.current-player {
+    background: var(--highlight);
+    color:#000;
+    font-weight:800;
+    box-shadow: 0 0 10px var(--highlight), 0 0 20px rgba(57,255,20,0.3);
+    transform: scale(1.03);
+}
+
+/* Toggle switch */
+.switch-container {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-top:14px;
+    gap:10px;
+    font-size:1rem;
+    color: var(--subtext);
+}
+.switch { position:relative; width:60px; height:30px; }
+.switch input {
+    appearance:none;
+    width:100%;
+    height:100%;
+    background:#555;
+    border-radius:30px;
+    outline:none;
+    cursor:pointer;
+    transition:0.3s;
+}
+.switch input:checked { background: var(--accent); }
+.switch input:before {
+    content:"";
+    position:absolute;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    top:2px;
+    left:2px;
+    background:#fff;
+    transition:0.3s;
+}
+.switch input:checked:before { left:32px; }
+
+/* Winner animation */
+#winnerMessage {
+    display:none;
+    text-align:center;
+    font-size:2.4rem;
+    font-weight:800;
+    color: var(--winner);
+    margin:20px 0;
+    text-shadow: 0 0 10px var(--winner), 0 0 20px rgba(255,255,0,0.3);
+    animation: glow 1s infinite alternate;
+}
+@keyframes glow {
+    from { text-shadow: 0 0 10px var(--winner), 0 0 20px rgba(255,255,0,0.2); }
+    to { text-shadow: 0 0 20px var(--winner), 0 0 40px rgba(255,255,0,0.4); }
+}
+
+#newGameBtn {
+    display:none;
+    background: linear-gradient(45deg,#ffd700,#ffb400);
+    color:#000;
+}
+#newGameBtn:hover { background: linear-gradient(45deg,#ffe033,#ffc000); transform: scale(1.03); }
+
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h1>Killers</h1>
+
+    <div class="card" id="gameCard">
+        <div class="current">
+            <div class="small">Current Player</div>
+            <div id="currentName" class="big"></div>
+            <div id="currentLives" class="small"></div>
+        </div>
+
+        <button class="danger" id="loseLifeBtn">Lose Life</button>
+
+        <div class="switch-container">
+            <span>Ping-Pong Mode</span>
+            <label class="switch">
+                <input type="checkbox" id="directionToggle">
+            </label>
+        </div>
+
+        <button class="primary" id="nextBtn">Next Player</button>
+
+        <div id="winnerMessage"></div>
+        <button id="newGameBtn">New Game</button>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom:12px;font-size:1.4rem;">Order</h2>
+        <ul class="players" id="orderList"></ul>
+    </div>
+</div>
+
+<script>
+async function api(path, opts){
+  const res = await fetch("/api/game"+path, opts);
+  return res.json().catch(()=>null);
+}
+
+const currentName = document.querySelector("#currentName");
+const currentLives = document.querySelector("#currentLives");
+const orderList = document.querySelector("#orderList");
+const loseLifeBtn = document.querySelector("#loseLifeBtn");
+const nextBtn = document.querySelector("#nextBtn");
+const directionToggle = document.querySelector("#directionToggle");
+const winnerMessage = document.querySelector("#winnerMessage");
+const newGameBtn = document.querySelector("#newGameBtn");
+
+let goingUp = false;
+
+async function moveNext(state) {
+    if (!state.started || state.players.length === 0) return;
+    const lastIndex = state.players.length - 1;
+    let currentIndex = state.currentIndex;
+
+    if (directionToggle.checked) {
+        if (!goingUp && currentIndex === lastIndex) goingUp = true;
+        else if (goingUp && currentIndex === 0) goingUp = false;
+        if (goingUp) await fetch("/api/game/prev",{method:"POST"});
+        else await fetch("/api/game/next",{method:"POST"});
+    } else {
+        await fetch("/api/game/next",{method:"POST"});
+    }
+}
+
+loseLifeBtn.onclick = async () => {
+    const state = await api("");
+    if (state.players.length === 0) return;
+    const current = state.players[state.currentIndex];
+    await fetch("/api/game/player/"+current.id+"/lose",{method:"POST"});
+    const newState = await api("");
+    await moveNext(newState);
+    refresh();
+};
+
+nextBtn.onclick = async () => {
+    const state = await api("");
+    await moveNext(state);
+    refresh();
+};
+
+newGameBtn.onclick = async () => {
+    await fetch("/api/game/clear",{method:"POST"});
+    window.location.href = "/index.html";
+};
+
+async function refresh(){
+    const state = await api("");
+    if(!state.started){ window.location.href="/index.html"; return; }
+
+    if(state.players.length === 1){
+        const winner = state.players[0];
+        winnerMessage.textContent = `Winner: ${winner.name}! 🎱`;
+        winnerMessage.style.display="block";
+        loseLifeBtn.disabled = true;
+        nextBtn.disabled = true;
+        directionToggle.disabled = true;
+        newGameBtn.style.display="block";
+        currentName.textContent = winner.name;
+        currentLives.textContent = winner.lives + " lives";
+        return;
+    } else {
+        winnerMessage.style.display="none";
+        loseLifeBtn.disabled = false;
+        nextBtn.disabled = false;
+        directionToggle.disabled = false;
+        newGameBtn.style.display="none";
+    }
+
+    const current = state.players[state.currentIndex];
+    currentName.textContent = current.name;
+    currentLives.textContent = current.lives + " lives";
+
+    orderList.innerHTML = "";
+    state.players.forEach((p,i)=>{
+        const li = document.createElement("li");
+        li.innerHTML=`<span>${p.name}</span><span>${p.lives}</span>`;
+        if(i===state.currentIndex) li.classList.add("current-player");
+        orderList.appendChild(li);
+    });
+}
+
+refresh();
+setInterval(refresh,2000);
+</script>
+</body>
+</html>
